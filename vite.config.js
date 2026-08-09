@@ -16,6 +16,8 @@ export default defineConfig({
         products3: resolve(__dirname, 'products-3.html'),
         products4: resolve(__dirname, 'products-4.html'),
         products5: resolve(__dirname, 'products-5.html'),
+        kneePositioner: resolve(__dirname, 'knee-positioner.html'),
+        booking: resolve(__dirname, 'booking.html'),
       },
     },
   },

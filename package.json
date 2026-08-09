@@ -11,6 +11,8 @@
     "vite": "^5.0.0"
   },
   "dependencies": {
-    "cheerio": "^1.2.0"
+    "cheerio": "^1.2.0",
+    "mammoth": "^1.12.0",
+    "pdf-parse": "^2.4.5"
   }
 }

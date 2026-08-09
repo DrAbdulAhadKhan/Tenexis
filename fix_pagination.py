@@ -1,29 +1,78 @@
-import re
-import glob
+with open('products.html', 'r', encoding='utf-8') as f:
+    p1 = f.read()
 
-files = glob.glob('products*.html')
+with open('products-2.html', 'r', encoding='utf-8') as f:
+    p2 = f.read()
 
-for file in files:
-    with open(file, 'r', encoding='utf-8') as f:
-        content = f.read()
+# The pagination section in products.html starts after the grid closes.
+# It looks like:
+#            </div>
+#            <div class="flex justify-center items-center mt-16 space-x-2 relative z-10">
+pagination_start = p1.find('<div class="flex justify-center items-center mt-16 space-x-2 relative z-10">')
+if pagination_start != -1:
+    pagination_end = p1.find('</div>', pagination_start) + 6
+    pagination_code = p1[pagination_start:pagination_end]
     
-    # 1. Remove the pagination link for page 6
-    # It looks like: <a href="products-6.html" class="w-10 h-10 flex items-center justify-center rounded-full font-bold text-sm bg-white text-slate-600 border border-slate-300 hover:border-medical-500 hover:text-medical-600 transition-colors">6</a>
-    # Or: <a href="products-6.html" class="w-10 h-10 flex items-center justify-center rounded-full border border-slate-300 text-slate-600 hover:border-medical-500 hover:text-medical-600 transition-colors" aria-label="Next Page">...</a>
+    # We need to adapt the pagination code for page 2
+    # In products.html:
+    # 1 is active (bg-medical-600 text-white)
+    # 2 is a link
     
-    # regex for removing whole <a> tags pointing to products-6.html (if they contain 6 or svg for next page)
-    # Be careful not to remove the "Explore Details" one, we'll replace that one first.
-    
-    content = content.replace('href="products-6.html"', 'href="#"')
-    
-    # Now they have href="#". Let's just remove the pagination buttons for 6 and Next Page
-    # <a href="#" class="... w-10 h-10 ...">6</a>
-    content = re.sub(r'<a href="#" class="w-10 h-10[^>]*>6</a>\s*', '', content)
-    
-    # Remove the next page arrow entirely
-    content = re.sub(r'<a href="#" class="w-10 h-10[^>]*aria-label="Next Page"[^>]*>\s*<svg[^>]*>.*?</svg>\s*</a>\s*', '', content, flags=re.DOTALL)
-    
-    with open(file, 'w', encoding='utf-8') as f:
-        f.write(content)
+    p_code = """
+            <div class="flex justify-center items-center mt-16 space-x-2 relative z-10">
+                <a href="products.html" class="w-10 h-10 flex items-center justify-center rounded-full border border-slate-300 text-slate-600 hover:border-medical-500 hover:text-medical-600 transition-colors" aria-label="Previous Page">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                </a>
+                <a href="products.html" class="w-10 h-10 flex items-center justify-center rounded-full font-bold text-sm bg-white text-slate-600 border border-slate-300 hover:border-medical-500 hover:text-medical-600 transition-colors">1</a>
+                <span class="w-10 h-10 flex items-center justify-center rounded-full font-bold text-sm bg-medical-600 text-white shadow-md">2</span>
+                <a href="products-3.html" class="w-10 h-10 flex items-center justify-center rounded-full font-bold text-sm bg-white text-slate-600 border border-slate-300 hover:border-medical-500 hover:text-medical-600 transition-colors">3</a>
+                <a href="products-4.html" class="w-10 h-10 flex items-center justify-center rounded-full font-bold text-sm bg-white text-slate-600 border border-slate-300 hover:border-medical-500 hover:text-medical-600 transition-colors">4</a>
+                <a href="products-5.html" class="w-10 h-10 flex items-center justify-center rounded-full font-bold text-sm bg-white text-slate-600 border border-slate-300 hover:border-medical-500 hover:text-medical-600 transition-colors">5</a>
+                <a href="products-3.html" class="w-10 h-10 flex items-center justify-center rounded-full border border-slate-300 text-slate-600 hover:border-medical-500 hover:text-medical-600 transition-colors" aria-label="Next Page">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </a>
+            </div>
+"""
 
-print("Done")
+    # Add Pipeline Innovations section as well
+    pipeline_start = p1.find('<div class="mt-24 text-center mb-12">')
+    if pipeline_start != -1:
+        pipeline_end = p1.find('</section>', pipeline_start)
+        pipeline_code = p1[pipeline_start:pipeline_end]
+        
+        # Now find where to insert in products-2.html
+        # We need to find the end of the grid:
+        grid_close = '</div>\n        </div>\n    </section>'
+        grid_close_idx = p2.rfind(grid_close)
+        
+        if grid_close_idx != -1:
+            # We want to insert the pagination right after the grid items, before the </div>\n        </div>
+            # Wait, the grid is just one div, we close the grid, then add pagination, then close the section?
+            # Let's see how it's structured in products.html
+            
+            # In products.html:
+            # ... product 11 ...
+            # </div> (closes grid)
+            # <div class="flex justify-center items-center mt-16 ..."> (pagination)
+            # <div class="mt-24 text-center mb-12"> (pipeline)
+            # <div class="grid ..."> (pipeline grid)
+            # </div> (closes pipeline grid)
+            # </div> (closes max-w-7xl mx-auto px-4...)
+            # </section>
+            
+            # So in products-2.html we can just replace the end of the section with the new stuff.
+            
+            replacement = '</div>\n' + p_code + pipeline_code + '</section>'
+            
+            # Actually, let's just find the closing grid tag in products-2.html. 
+            # In products-2.html we appended: grid_close = """\n            </div>\n        </div>\n    </section>\n"""
+            # Let's replace that.
+            
+            new_p2 = p2.replace('            </div>\n        </div>\n    </section>\n', replacement)
+            
+            with open('products-2.html', 'w', encoding='utf-8') as fw:
+                fw.write(new_p2)
+            print("Successfully inserted pagination and pipeline into products-2.html")
+        else:
+            print("Could not find grid close in products-2.html")
+            

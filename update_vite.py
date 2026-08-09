@@ -3,7 +3,12 @@ import re
 with open('vite.config.js', 'r') as f:
     content = f.read()
 
-content = content.replace("products5: resolve(__dirname, 'products-5.html'),", "products5: resolve(__dirname, 'products-5.html'),\n        products6: resolve(__dirname, 'products-6.html'),")
+# Insert kneePositioner into input object
+content = re.sub(
+    r"(products5: resolve\(__dirname, 'products-5\.html'\),)",
+    r"\1\n        kneePositioner: resolve(__dirname, 'knee-positioner.html'),",
+    content
+)
 
 with open('vite.config.js', 'w') as f:
     f.write(content)
